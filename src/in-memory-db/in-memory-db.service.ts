@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { StoreItemEntity } from './models/store-item.enity';
@@ -35,11 +34,9 @@ export class InMemoryDbService {
 
     if (sortBy) {
       reuslt.sort((a, b) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (a[sortBy] < b[sortBy]) {
           return -1;
         }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (a[sortBy] > b[sortBy]) {
           return 1;
         }
@@ -62,7 +59,7 @@ export class InMemoryDbService {
     return entities.find((entity) => {
       return Object.keys(query).every((key) => {
         const queryValue = query[key];
-        const entityValue = entity[key];
+        const entityValue = entity[key as keyof EntityModel];
 
         // Handle numeric string comparisons
         if (typeof entityValue === 'number' && typeof queryValue === 'string') {
