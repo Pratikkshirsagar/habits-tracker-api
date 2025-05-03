@@ -1,21 +1,31 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { StoreItemEntity } from './models/store-item.enity';
 
 @Injectable()
 export class InMemoryDbService {
-  private store: Map<string, any[]> = new Map();
+  private store: Map<string, StoreItemEntity[]> = new Map();
 
-  create(entityName: string, input): any {
-    this.getEntitiesStoreByName(entityName)?.push(input);
-    return input;
+  create<EntityModel extends StoreItemEntity>(
+    entityName: string,
+    entity,
+  ): EntityModel {
+    const newEntity = {
+      id: randomUUID().toString(),
+      ...entity,
+    } as EntityModel;
+
+    this.getEntitiesStoreByName<EntityModel>(entityName).push(newEntity);
+    return newEntity;
   }
 
-  findAll(
+  findAll<EntityModel extends StoreItemEntity>(
     entityName: string,
     query: { limit?: number; sortBy?: string } = {},
-  ): any {
+  ): EntityModel[] {
     const { limit, sortBy } = query;
-    const reuslt = this.getEntitiesStoreByName(entityName);
+    const reuslt = this.getEntitiesStoreByName<EntityModel>(entityName);
 
     if (sortBy) {
       reuslt.sort((a, b) => {
@@ -38,21 +48,21 @@ export class InMemoryDbService {
     return reuslt;
   }
 
-  findOneBy(entityName: string, filter: { [key: string]: any }) {
-    const entities = this.getEntitiesStoreByName(entityName);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  findOneBy<EntityModel extends StoreItemEntity>(
+    entityName: string,
+    filter: { [key: string]: any },
+  ): EntityModel | undefined {
+    const entities = this.getEntitiesStoreByName<EntityModel>(entityName);
     return entities.find((entity) => {
-      const isMatchingFilter = Object.keys(filter).every(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        (key) => entity[key] === filter[key],
-      );
-
-      return isMatchingFilter;
+      return Object.keys(filter).every((key) => entity[key] === filter[key]);
     });
   }
 
-  deleteOneBy(entityName: string, filter: { [key: string]: any }) {
-    const entities = this.getEntitiesStoreByName(entityName);
+  deleteOneBy<EntityModel extends StoreItemEntity>(
+    entityName: string,
+    filter: { [key: string]: any },
+  ): EntityModel | undefined {
+    const entities = this.getEntitiesStoreByName<EntityModel>(entityName);
     const entityIndex = entities.findIndex((entity) => {
       return Object.keys(filter).every((key) => entity[key] === filter[key]);
     });
@@ -61,13 +71,17 @@ export class InMemoryDbService {
       return undefined;
     }
 
-    const deletedEntity: any = entities[entityIndex];
+    const deletedEntity = entities[entityIndex];
     entities.splice(entityIndex, 1);
     return deletedEntity;
   }
 
-  updateOneBy(entityName: string, filter: { [key: string]: any }, updateInput) {
-    const entities = this.getEntitiesStoreByName(entityName);
+  updateOneBy<EntityModel extends StoreItemEntity>(
+    entityName: string,
+    filter: { [key: string]: any },
+    input: Partial<Omit<EntityModel, 'id'>>,
+  ): EntityModel | undefined {
+    const entities = this.getEntitiesStoreByName<EntityModel>(entityName);
     const entityIndex = entities.findIndex((entity) => {
       return Object.keys(filter).every((key) => entity[key] === filter[key]);
     });
@@ -76,16 +90,19 @@ export class InMemoryDbService {
       return undefined;
     }
 
-    const updatedEntity = { ...entities[entityIndex], ...updateInput };
+    const updatedEntity: EntityModel = { ...entities[entityIndex], ...input };
     entities[entityIndex] = updatedEntity;
     return updatedEntity;
   }
 
-  private getEntitiesStoreByName(entityName: string): any[] {
+  private getEntitiesStoreByName<EntityModel extends StoreItemEntity>(
+    entityName: string,
+  ): EntityModel[] {
+    // If the entity store does not exist, create it
     if (!this.store.has(entityName)) {
       this.store.set(entityName, []);
     }
 
-    return this.store.get(entityName)!;
+    return this.store.get(entityName) as EntityModel[];
   }
 }
