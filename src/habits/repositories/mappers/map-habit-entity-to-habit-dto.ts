@@ -8,11 +8,9 @@ export const mapHabitEntityToHabitDto = (
     return undefined;
   }
 
-  const { id, name, description } = entity;
-
   return {
-    id,
-    name,
-    description,
+    id: String(entity.habitId),
+    name: entity.name,
+    description: entity.description,
   };
 };
